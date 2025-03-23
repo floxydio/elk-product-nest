@@ -8,9 +8,9 @@ datasource db {
 }
 
 model products {
-  product_id    Int    @id @default(autoincrement())
-  product_name  String @db.VarChar(255)
-  product_desc  String @db.Text
-  product_price String @db.VarChar(255)
-  product_tag   String @db.VarChar(100)
+  product_id    Int     @id @default(autoincrement())
+  product_name  String  @db.VarChar(255)
+  product_desc  String  @db.Text
+  product_price Decimal @db.Decimal(10, 0)
+  product_tag   String  @db.VarChar(100)
 }

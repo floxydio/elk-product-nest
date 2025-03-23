@@ -47,4 +47,12 @@ export class ElasticsearchWrapperService {
         return this.client.index(params);
     }
 
+    async delete(params: any) {
+        if (!this.isAvailable) {
+            this.logger.warn('Delete Skipped: Elasticsearch is not connected.');
+            return;
+        }
+        return this.client.delete(params)
+    }
+
 }

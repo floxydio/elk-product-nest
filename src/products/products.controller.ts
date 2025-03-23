@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, HttpException, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpException, Param, Post, Query } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { ProductDto } from './dto/products_dto';
 import { ProductQuery } from './query/products_query';
@@ -42,6 +42,18 @@ export class ProductsController {
       return response
     }
   }
+
+  @Delete("/delete/:id")
+  async deleteProduct(@Param("id") id: number) {
+    let response = await this.productsService.deleteProduct(Number(id))
+
+    if (response.error) {
+      throw new HttpException(response, response.status)
+    } else {
+      return response
+    }
+  }
+
 
   @Get("/search")
   async searchProduct(@Query() productQuery: ProductQuery) {

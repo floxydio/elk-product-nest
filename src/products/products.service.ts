@@ -80,7 +80,19 @@ export class ProductsService {
                     product_price: productForm.product_price,
                     product_tag: productForm.product_tag
                 }
+            }).then(async (d) => {
+                await this.elasticSearchService.index({
+                    index: "products",
+                    id: d.product_id.toString(),
+                    body: {
+                        product_name: d.product_name,
+                        product_desc: d.product_desc,
+                        product_price: Number(d.product_price),
+                        product_tag: d.product_tag
+                    }
+                })
             })
+
             return {
                 status: 201,
                 error: false,
@@ -97,17 +109,22 @@ export class ProductsService {
 
     async searchProduct(query: ProductQuery) {
         const must: any[] = [];
-
-
+        let queryData = {} as any
+        let statusSearch = 0
         if (query.product_name !== "" && query.product_name !== undefined) {
-            must.push({
-                term: {
-                    product_name: query.product_name
+            statusSearch = 2
+            queryData = {
+                wildcard: {
+                    product_name: {
+                        value: query.product_name
+                    }
                 }
-            });
+            }
         }
 
         if (query.product_desc !== "" && query.product_desc !== undefined) {
+            statusSearch = 1
+
             must.push({
                 term: {
                     product_desc: query.product_desc
@@ -116,6 +133,7 @@ export class ProductsService {
         }
 
         if (query.product_tag !== "" && query.product_tag !== undefined) {
+            statusSearch = 1
             must.push({
                 term: {
                     product_tag: query.product_tag
@@ -123,14 +141,25 @@ export class ProductsService {
             })
         }
 
+        if (query.min !== undefined && query.max !== undefined) {
+            queryData = {
+                range: {
+                    product_price: {
+                        gte: (query.min),
+                        lte: Number(query.max)
+                    }
+                }
+            }
+        }
+
         const data = await this.elasticSearchService.search({
-            query: {
+            query: statusSearch == 0 || statusSearch == 2 ? queryData : {
                 bool: {
                     must: must
                 }
             }
         });
-        const hits = data.hits.hits.map((hit) => hit._source);
+        const hits = data.hits.hits.map((hit: any) => hit._source);
 
         return {
             status: 200,
@@ -138,5 +167,30 @@ export class ProductsService {
                 products: hits
             }
         };
+    }
+
+    async deleteProduct(id: number) {
+        await this.prisma.products.delete({
+            where: {
+                product_id: Number(id)
+            }
+        }).then(async () => {
+            await this.elasticSearchService.delete({
+                index: 'products',
+                id: id.toString()
+            })
+        }).catch((err) => {
+            return {
+                status: 500,
+                error: true,
+                message: err.message
+            }
+        })
+
+        return {
+            status: 200,
+            error: false,
+            message: "Successfully delete"
+        }
     }
 }
